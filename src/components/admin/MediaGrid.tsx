@@ -5,14 +5,16 @@ import { GripVertical, Trash2, Star, Image as ImageIcon, Video } from 'lucide-re
 import { cn } from '@/lib/utils';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 
-interface MediaItem {
+export interface MediaItem {
   id: string;
   url: string;
   type: 'image' | 'video';
   width: number;
   height: number;
-  size: number;
-  isCover: boolean;
+  size?: number;
+  is_hero?: boolean;
+  isCover?: boolean;
+  sort_order?: number;
 }
 
 interface MediaGridProps {
@@ -62,67 +64,71 @@ export default function MediaGrid({ items, onUpdateOrder, onSetCover, onDelete }
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {items.map((item, idx) => (
-          <div 
-            key={item.id}
-            draggable
-            onDragStart={(e) => handleDragStart(e, idx)}
-            onDragOver={(e) => handleDragOver(e, idx)}
-            onDragEnd={handleDragEnd}
-            className={cn(
-              "group relative bg-[#1a1a1a] border transition-all cursor-move",
-              item.isCover ? "border-[#f5f5f0]" : "border-[#2a2a2a]",
-              draggedIdx === idx ? "opacity-50" : "opacity-100"
-            )}
-          >
-            {/* Aspect Ratio Box */}
-            <div className="relative pt-[100%] bg-[#0a0a0a] overflow-hidden">
-              {item.type === 'image' ? (
-                <img src={item.url} alt="" className="absolute inset-0 w-full h-full object-cover" />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Video className="w-8 h-8 text-neutral-600" />
-                </div>
+        {items.map((item, idx) => {
+          const isHero = !!(item.is_hero || item.isCover);
+          return (
+            <div 
+              key={item.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, idx)}
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDragEnd={handleDragEnd}
+              className={cn(
+                "group relative bg-[#1a1a1a] border transition-all cursor-move",
+                isHero ? "border-[#f5f5f0]" : "border-[#2a2a2a]",
+                draggedIdx === idx ? "opacity-50" : "opacity-100"
               )}
-              
-              {/* Overlay Actions */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
-                <div className="flex justify-between items-start">
-                  <div className="bg-black/80 px-2 py-1 text-[10px] uppercase tracking-wider flex items-center gap-1">
-                    {item.type === 'image' ? <ImageIcon className="w-3 h-3" /> : <Video className="w-3 h-3" />}
-                    {item.width}x{item.height}
+            >
+              {/* Aspect Ratio Box */}
+              <div className="relative pt-[100%] bg-[#0a0a0a] overflow-hidden">
+                {item.type === 'image' ? (
+                  <img src={item.url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Video className="w-8 h-8 text-neutral-600" />
                   </div>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setDeleteId(item.id); }}
-                    className="p-1.5 bg-red-900/80 text-white hover:bg-red-600 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                )}
                 
-                <div className="flex justify-center">
-                  {!item.isCover && (
+                {/* Overlay Actions */}
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+                  <div className="flex justify-between items-start">
+                    <div className="bg-black/80 px-2 py-1 text-[10px] uppercase tracking-wider flex items-center gap-1">
+                      {item.type === 'image' ? <ImageIcon className="w-3 h-3" /> : <Video className="w-3 h-3" />}
+                      {item.width}x{item.height}
+                    </div>
                     <button 
-                      onClick={(e) => { e.stopPropagation(); onSetCover(item.id); }}
-                      className="px-3 py-1.5 bg-[#f5f5f0] text-black text-xs font-bold uppercase tracking-wider hover:bg-white"
+                      onClick={(e) => { e.stopPropagation(); setDeleteId(item.id); }}
+                      className="p-1.5 bg-red-900/80 text-white hover:bg-red-600 transition-colors"
+                      title="Delete"
                     >
-                      Set Cover
+                      <Trash2 className="w-4 h-4" />
                     </button>
-                  )}
+                  </div>
+                  
+                  <div className="flex justify-center">
+                    {!isHero && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onSetCover(item.id); }}
+                        className="px-3 py-1.5 bg-[#f5f5f0] text-black text-xs font-bold uppercase tracking-wider hover:bg-white"
+                      >
+                        Set Hero
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Footer */}
-            <div className="p-2 flex items-center justify-between text-xs text-neutral-400 bg-[#1a1a1a]">
-              <div className="flex items-center gap-1">
-                <GripVertical className="w-3 h-3" />
-                <span className="truncate max-w-[100px]">{formatSize(item.size)}</span>
+              
+              {/* Footer */}
+              <div className="p-2 flex items-center justify-between text-xs text-neutral-400 bg-[#1a1a1a]">
+                <div className="flex items-center gap-1">
+                  <GripVertical className="w-3 h-3" />
+                  <span className="truncate max-w-[100px]">{formatSize(item.size || 0)}</span>
+                </div>
+                {isHero && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
               </div>
-              {item.isCover && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <ConfirmDialog 

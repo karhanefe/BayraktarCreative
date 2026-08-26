@@ -1,6 +1,5 @@
 import { createClient } from './server';
-import type { Database, Project, Category, SiteSettings } from './types';
-import { demoProjects, demoCategories, demoSiteSettings } from '../demo-data';
+import type { Database, Project, Category, Media, SiteSettingRow, CompleteProject } from './types';
 
 export async function isUserAdmin(userId: string): Promise<boolean> {
   const supabase = await createClient();
@@ -8,7 +7,7 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, is_active')
     .eq('auth_user_id', userId)
     .eq('is_active', true)
     .single();
@@ -17,46 +16,100 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
   return data.role === 'admin';
 }
 
-export async function getAllProjects(filters?: { is_published?: boolean }): Promise<Project[]> {
+export async function getAdminStats(): Promise<{
+  total: number;
+  published: number;
+  draft: number;
+  categories: number;
+  media: number;
+}> {
   const supabase = await createClient();
   if (!supabase) {
-    if (filters && filters.is_published !== undefined) {
-      return demoProjects.filter((p) => p.is_published === filters.is_published);
-    }
-    return demoProjects;
+    return { total: 0, published: 0, draft: 0, categories: 0, media: 0 };
+  }
+
+  const [
+    { count: totalCount },
+    { count: publishedCount },
+    { count: draftCount },
+    { count: categoryCount },
+    { count: mediaCount },
+  ] = await Promise.all([
+    supabase.from('projects').select('*', { count: 'exact', head: true }),
+    supabase.from('projects').select('*', { count: 'exact', head: true }).eq('published', true),
+    supabase.from('projects').select('*', { count: 'exact', head: true }).eq('published', false),
+    supabase.from('categories').select('*', { count: 'exact', head: true }),
+    supabase.from('media').select('*', { count: 'exact', head: true }),
+  ]);
+
+  return {
+    total: totalCount || 0,
+    published: publishedCount || 0,
+    draft: draftCount || 0,
+    categories: categoryCount || 0,
+    media: mediaCount || 0,
+  };
+}
+
+export async function getAllProjects(filters?: { published?: boolean }): Promise<CompleteProject[]> {
+  const supabase = await createClient();
+  if (!supabase) {
+    return [];
   }
 
   let query = supabase
     .from('projects')
-    .select('*')
+    .select(`
+      *,
+      category:categories(*),
+      media:media(*)
+    `)
+    .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
 
-  if (filters && filters.is_published !== undefined) {
-    query = query.eq('is_published', filters.is_published);
+  if (filters && filters.published !== undefined) {
+    query = query.eq('published', filters.published);
   }
 
   const { data, error } = await query;
-  if (error) throw error;
-  return data as Project[];
+  if (error) {
+    console.error('Error fetching admin projects:', error);
+    return [];
+  }
+
+  return (data as CompleteProject[]).map((project) => ({
+    ...project,
+    media: (project.media || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
+  }));
 }
 
-export async function getProjectById(id: string): Promise<Project | null> {
+export async function getProjectById(id: string): Promise<CompleteProject | null> {
   const supabase = await createClient();
   if (!supabase) {
-    return demoProjects.find((p) => p.id === id) || null;
+    return null;
   }
 
   const { data, error } = await supabase
     .from('projects')
-    .select('*')
+    .select(`
+      *,
+      category:categories(*),
+      media:media(*)
+    `)
     .eq('id', id)
     .single();
 
   if (error) {
     if (error.code === 'PGRST116') return null;
-    throw error;
+    console.error(`Error fetching project by id ${id}:`, error);
+    return null;
   }
-  return data as Project;
+
+  const project = data as CompleteProject;
+  if (project.media) {
+    project.media = project.media.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  }
+  return project;
 }
 
 export async function createProject(projectData: Database['public']['Tables']['projects']['Insert']): Promise<Project> {
@@ -79,7 +132,7 @@ export async function updateProject(id: string, projectData: Database['public'][
 
   const { data, error } = await supabase
     .from('projects')
-    .update(projectData)
+    .update({ ...projectData, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
     .single();
@@ -103,23 +156,27 @@ export async function deleteProject(id: string): Promise<void> {
 export async function duplicateProject(id: string): Promise<Project> {
   const supabase = await createClient();
   if (!supabase) throw new Error('Database not configured');
-  
+
   const existingProject = await getProjectById(id);
-  if (!existingProject) throw new Error("Project not found");
+  if (!existingProject) throw new Error('Project not found');
 
   const newSlug = await generateUniqueSlug(`${existingProject.title} Copy`);
-  
+
   const { data, error } = await supabase
     .from('projects')
     .insert({
-      ...existingProject,
-      id: undefined,
       title: `${existingProject.title} (Copy)`,
       slug: newSlug,
-      is_published: false,
-      is_featured: false,
-      created_at: undefined,
-      updated_at: undefined,
+      description_tr: existingProject.description_tr,
+      description_en: existingProject.description_en,
+      category_id: existingProject.category_id,
+      client: existingProject.client,
+      location: existingProject.location,
+      year: existingProject.year,
+      hero_aspect_ratio: existingProject.hero_aspect_ratio,
+      featured: false,
+      published: false,
+      sort_order: (existingProject.sort_order || 0) + 1,
     })
     .select()
     .single();
@@ -131,27 +188,30 @@ export async function duplicateProject(id: string): Promise<Project> {
 export async function updateProjectOrder(items: { id: string; sort_order: number }[]): Promise<void> {
   const supabase = await createClient();
   if (!supabase) throw new Error('Database not configured');
-  
+
   for (const item of items) {
     const { error } = await supabase
       .from('projects')
       .update({ sort_order: item.sort_order })
       .eq('id', item.id);
-      
+
     if (error) throw error;
   }
 }
 
 export async function getAllCategories(): Promise<Category[]> {
   const supabase = await createClient();
-  if (!supabase) return demoCategories;
+  if (!supabase) return [];
 
   const { data, error } = await supabase
     .from('categories')
     .select('*')
     .order('sort_order', { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching categories:', error);
+    return [];
+  }
   return data as Category[];
 }
 
@@ -199,34 +259,105 @@ export async function deleteCategory(id: string): Promise<void> {
 export async function updateCategoryOrder(items: { id: string; sort_order: number }[]): Promise<void> {
   const supabase = await createClient();
   if (!supabase) throw new Error('Database not configured');
-  
+
   for (const item of items) {
     const { error } = await supabase
       .from('categories')
       .update({ sort_order: item.sort_order })
       .eq('id', item.id);
-      
+
     if (error) throw error;
   }
 }
 
-export async function updateSiteSettings(settingsData: Database['public']['Tables']['site_settings']['Update']): Promise<SiteSettings> {
+export async function getRawSiteSettings(): Promise<Record<string, any>> {
+  const supabase = await createClient();
+  if (!supabase) return {};
+
+  const { data, error } = await supabase.from('site_settings').select('*');
+  if (error || !data) return {};
+
+  const result: Record<string, any> = {};
+  for (const row of data) {
+    result[row.key] = row.value;
+  }
+  return result;
+}
+
+export async function updateSiteSetting(key: string, value: any): Promise<void> {
   const supabase = await createClient();
   if (!supabase) throw new Error('Database not configured');
-  
-  const { data: existing } = await supabase.from('site_settings').select('id').single();
-  
-  if (!existing) throw new Error("Site settings not found");
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('site_settings')
-    .update(settingsData)
-    .eq('id', existing.id)
-    .select()
-    .single();
+    .upsert({
+      key,
+      value,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'key' });
 
   if (error) throw error;
-  return data as SiteSettings;
+}
+
+export async function getProjectMediaList(projectId: string): Promise<Media[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('media')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('sort_order', { ascending: true });
+
+  if (error || !data) return [];
+  return data as Media[];
+}
+
+export async function deleteMediaItem(id: string): Promise<void> {
+  const supabase = await createClient();
+  if (!supabase) throw new Error('Database not configured');
+
+  const { error } = await supabase
+    .from('media')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+export async function setHeroMedia(projectId: string, mediaId: string): Promise<void> {
+  const supabase = await createClient();
+  if (!supabase) throw new Error('Database not configured');
+
+  // Reset all to false
+  await supabase
+    .from('media')
+    .update({ is_hero: false })
+    .eq('project_id', projectId);
+
+  // Set selected to true
+  const { error } = await supabase
+    .from('media')
+    .update({ is_hero: true })
+    .eq('id', mediaId)
+    .eq('project_id', projectId);
+
+  if (error) throw error;
+}
+
+export async function updateMediaOrder(projectId: string, items: { id: string; sort_order: number }[]): Promise<void> {
+  const supabase = await createClient();
+  if (!supabase) throw new Error('Database not configured');
+
+  for (const item of items) {
+    const { error } = await supabase
+      .from('media')
+      .update({ sort_order: item.sort_order })
+      .eq('id', item.id)
+      .eq('project_id', projectId);
+
+    if (error) throw error;
+  }
 }
 
 export async function generateUniqueSlug(title: string, existingSlug?: string): Promise<string> {
@@ -235,14 +366,14 @@ export async function generateUniqueSlug(title: string, existingSlug?: string): 
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
-    
+
   if (existingSlug === baseSlug) return baseSlug;
 
-  let slug = baseSlug;
+  let slug = baseSlug || 'project';
   let counter = 1;
   let isUnique = false;
 
-  if (!supabase) return `${baseSlug}-${Date.now()}`;
+  if (!supabase) return `${slug}-${Date.now()}`;
 
   while (!isUnique) {
     const { data } = await supabase
@@ -254,7 +385,7 @@ export async function generateUniqueSlug(title: string, existingSlug?: string): 
     if (!data) {
       isUnique = true;
     } else {
-      slug = `${baseSlug}-${counter}`;
+      slug = `${baseSlug || 'project'}-${counter}`;
       counter++;
     }
   }

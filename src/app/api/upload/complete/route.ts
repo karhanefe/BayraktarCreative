@@ -26,20 +26,24 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { 
       projectId, 
-      storageKey, 
       url, 
       mediaType, 
-      mimeType, 
-      fileSize, 
+      type,
       width, 
       height, 
-      duration, 
+      aspect_ratio,
       sort_order, 
+      is_hero,
       is_cover, 
-      alt_text 
+      caption_tr,
+      caption_en,
+      alt_text,
+      poster_url,
     } = body;
 
-    if (!projectId || !storageKey || !url || !mediaType || !mimeType) {
+    const actualType = mediaType || type || 'image';
+
+    if (!projectId || !url) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -54,22 +58,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    // Create media record
+    const w = width || (actualType === 'video' ? 1920 : 1920);
+    const h = height || (actualType === 'video' ? 1080 : 1080);
+    const calculatedAspect = `${w}:${h}`;
+
+    // Create media record in live "media" table
     const { data: media, error: mediaError } = await supabase
-      .from('project_media')
+      .from('media')
       .insert({
         project_id: projectId,
-        storage_key: storageKey,
+        type: actualType,
         url,
-        media_type: mediaType,
-        mime_type: mimeType,
-        file_size: fileSize,
-        width,
-        height,
-        duration,
+        aspect_ratio: aspect_ratio || calculatedAspect,
+        width: w,
+        height: h,
+        is_hero: is_hero ?? is_cover ?? false,
         sort_order: sort_order || 0,
-        is_cover: is_cover || false,
-        alt_text,
+        caption_tr: caption_tr || alt_text || null,
+        caption_en: caption_en || alt_text || null,
+        poster_url: poster_url || null,
       })
       .select()
       .single();

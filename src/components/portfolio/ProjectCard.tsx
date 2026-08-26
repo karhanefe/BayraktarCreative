@@ -25,8 +25,8 @@ export interface ProjectCardProps {
     id: string;
     slug: string;
     title: string;
-    category?: { name: string } | string | null;
-    categories?: { name: string } | null;
+    category?: { name?: string; name_en?: string; name_tr?: string; slug?: string } | string | null;
+    categories?: { name?: string; name_en?: string; name_tr?: string; slug?: string } | null;
     client?: string | null;
     presentation_style?: string | null;
     presentationStyle?: string | null;
@@ -76,7 +76,11 @@ export function ProjectCard({ project, layout = 'default', className }: ProjectC
   const categoryName =
     typeof project.category === 'string'
       ? project.category
-      : project.category?.name || project.categories?.name || 'Selected Work';
+      : project.category?.name_en ||
+        project.category?.name_tr ||
+        (project.category as any)?.name ||
+        (project as any).categories?.name ||
+        'Selected Work';
 
   const width = resolvedMedia?.width || 1920;
   const height = resolvedMedia?.height || 1080;

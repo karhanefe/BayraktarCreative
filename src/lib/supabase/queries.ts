@@ -1,15 +1,15 @@
 import { createClient } from './server';
-import type { Category, ProjectWithCategory, ProjectMedia, SiteSettings, CompleteProject, ProjectWithMedia } from './types';
+import type { Category, Project, Media, SiteSettings, CompleteProject, ProjectWithCategory, ProjectWithMedia } from './types';
 import { demoProjects, demoCategories, demoSiteSettings } from '../demo-data';
 
-export type { Category, ProjectWithCategory, ProjectMedia, SiteSettings, CompleteProject, ProjectWithMedia };
+export type { Category, Project, Media, SiteSettings, CompleteProject, ProjectWithCategory, ProjectWithMedia };
 
 export async function getPublishedProjects(categorySlug?: string): Promise<CompleteProject[]> {
   try {
     const supabase = await createClient();
     if (!supabase) {
       if (categorySlug) {
-        return demoProjects.filter(p => p.category?.slug === categorySlug);
+        return demoProjects.filter((p) => p.category?.slug === categorySlug);
       }
       return demoProjects;
     }
@@ -19,9 +19,9 @@ export async function getPublishedProjects(categorySlug?: string): Promise<Compl
       .select(`
         *,
         category:categories(*),
-        media:project_media(*)
+        media:media(*)
       `)
-      .eq('is_published', true)
+      .eq('published', true)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
 
@@ -36,15 +36,23 @@ export async function getPublishedProjects(categorySlug?: string): Promise<Compl
 
     const { data, error } = await query;
     if (error || !data) throw error;
-    
-    return (data as CompleteProject[]).map(project => ({
+
+    if (data.length === 0) {
+      // Fallback to demo projects if database is empty so visual layout continues working
+      if (categorySlug) {
+        return demoProjects.filter((p) => p.category?.slug === categorySlug);
+      }
+      return demoProjects;
+    }
+
+    return (data as CompleteProject[]).map((project) => ({
       ...project,
-      media: (project.media || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      media: (project.media || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
     }));
   } catch (err) {
-    console.warn('Supabase getPublishedProjects fallback to demo data');
+    console.warn('Supabase getPublishedProjects fallback to demo data:', err);
     if (categorySlug) {
-      return demoProjects.filter(p => p.category?.slug === categorySlug);
+      return demoProjects.filter((p) => p.category?.slug === categorySlug);
     }
     return demoProjects;
   }
@@ -54,7 +62,7 @@ export async function getFeaturedProjects(): Promise<CompleteProject[]> {
   try {
     const supabase = await createClient();
     if (!supabase) {
-      return demoProjects.filter(p => p.is_featured);
+      return demoProjects.filter((p) => p.featured);
     }
 
     const { data, error } = await supabase
@@ -62,21 +70,25 @@ export async function getFeaturedProjects(): Promise<CompleteProject[]> {
       .select(`
         *,
         category:categories(*),
-        media:project_media(*)
+        media:media(*)
       `)
-      .eq('is_published', true)
-      .eq('is_featured', true)
-      .order('featured_order', { ascending: true });
+      .eq('published', true)
+      .eq('featured', true)
+      .order('sort_order', { ascending: true });
 
     if (error || !data) throw error;
-    
-    return (data as CompleteProject[]).map(project => ({
+
+    if (data.length === 0) {
+      return demoProjects.filter((p) => p.featured);
+    }
+
+    return (data as CompleteProject[]).map((project) => ({
       ...project,
-      media: (project.media || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      media: (project.media || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
     }));
   } catch (err) {
-    console.warn('Supabase getFeaturedProjects fallback to demo data');
-    return demoProjects.filter(p => p.is_featured);
+    console.warn('Supabase getFeaturedProjects fallback to demo data:', err);
+    return demoProjects.filter((p) => p.featured);
   }
 }
 
@@ -84,7 +96,7 @@ export async function getProjectBySlug(slug: string): Promise<CompleteProject | 
   try {
     const supabase = await createClient();
     if (!supabase) {
-      return demoProjects.find(p => p.slug === slug) || null;
+      return demoProjects.find((p) => p.slug === slug) || null;
     }
 
     const { data, error } = await supabase
@@ -92,13 +104,15 @@ export async function getProjectBySlug(slug: string): Promise<CompleteProject | 
       .select(`
         *,
         category:categories(*),
-        media:project_media(*)
+        media:media(*)
       `)
       .eq('slug', slug)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
+      if (error.code === 'PGRST116') {
+        return demoProjects.find((p) => p.slug === slug) || null;
+      }
       throw error;
     }
 
@@ -106,33 +120,33 @@ export async function getProjectBySlug(slug: string): Promise<CompleteProject | 
     if (project.media) {
       project.media = project.media.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
     }
-    
+
     return project;
   } catch (err) {
-    console.warn(`Supabase getProjectBySlug(${slug}) fallback to demo data`);
-    return demoProjects.find(p => p.slug === slug) || null;
+    console.warn(`Supabase getProjectBySlug(${slug}) fallback to demo data:`, err);
+    return demoProjects.find((p) => p.slug === slug) || null;
   }
 }
 
-export async function getProjectMedia(projectId: string): Promise<ProjectMedia[]> {
+export async function getProjectMedia(projectId: string): Promise<Media[]> {
   try {
     const supabase = await createClient();
     if (!supabase) {
-      const proj = demoProjects.find(p => p.id === projectId);
+      const proj = demoProjects.find((p) => p.id === projectId);
       return proj?.media || [];
     }
 
     const { data, error } = await supabase
-      .from('project_media')
+      .from('media')
       .select('*')
       .eq('project_id', projectId)
       .order('sort_order', { ascending: true });
 
     if (error || !data) throw error;
-    return data as ProjectMedia[];
+    return data as Media[];
   } catch (err) {
-    console.warn(`Supabase getProjectMedia(${projectId}) fallback to demo data`);
-    const proj = demoProjects.find(p => p.id === projectId);
+    console.warn(`Supabase getProjectMedia(${projectId}) fallback to demo data:`, err);
+    const proj = demoProjects.find((p) => p.id === projectId);
     return proj?.media || [];
   }
 }
@@ -141,20 +155,20 @@ export async function getVisibleCategories(): Promise<Category[]> {
   try {
     const supabase = await createClient();
     if (!supabase) {
-      return demoCategories.filter(c => c.is_visible);
+      return demoCategories;
     }
 
     const { data, error } = await supabase
       .from('categories')
       .select('*')
-      .eq('is_visible', true)
       .order('sort_order', { ascending: true });
 
     if (error || !data) throw error;
+    if (data.length === 0) return demoCategories;
     return data as Category[];
   } catch (err) {
-    console.warn('Supabase getVisibleCategories fallback to demo data');
-    return demoCategories.filter(c => c.is_visible);
+    console.warn('Supabase getVisibleCategories fallback to demo data:', err);
+    return demoCategories;
   }
 }
 
@@ -162,7 +176,7 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
   try {
     const supabase = await createClient();
     if (!supabase) {
-      return demoCategories.find(c => c.slug === slug) || null;
+      return demoCategories.find((c) => c.slug === slug) || null;
     }
 
     const { data, error } = await supabase
@@ -172,13 +186,15 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
+      if (error.code === 'PGRST116') {
+        return demoCategories.find((c) => c.slug === slug) || null;
+      }
       throw error;
     }
     return data as Category;
   } catch (err) {
-    console.warn(`Supabase getCategoryBySlug(${slug}) fallback to demo data`);
-    return demoCategories.find(c => c.slug === slug) || null;
+    console.warn(`Supabase getCategoryBySlug(${slug}) fallback to demo data:`, err);
+    return demoCategories.find((c) => c.slug === slug) || null;
   }
 }
 
@@ -191,16 +207,35 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 
     const { data, error } = await supabase
       .from('site_settings')
-      .select('*')
-      .single();
+      .select('*');
 
-    if (error) {
+    if (error || !data || data.length === 0) {
       return demoSiteSettings;
     }
-    
-    return data as SiteSettings;
+
+    const settingsObj: Record<string, any> = { ...demoSiteSettings };
+    for (const row of data) {
+      settingsObj[row.key] = row.value;
+    }
+
+    return {
+      site_title: settingsObj.site_title || demoSiteSettings.site_title,
+      tagline: settingsObj.tagline || demoSiteSettings.tagline,
+      phone: settingsObj.contact_phone || settingsObj.phone || demoSiteSettings.phone,
+      email: settingsObj.contact_email || settingsObj.email || demoSiteSettings.email,
+      instagram: settingsObj.social_links?.instagram || settingsObj.instagram || demoSiteSettings.instagram,
+      whatsapp: settingsObj.social_links?.whatsapp || settingsObj.whatsapp || demoSiteSettings.whatsapp,
+      about_text: settingsObj.about_text || demoSiteSettings.about_text,
+      contact_text: settingsObj.contact_text || demoSiteSettings.contact_text,
+      footer_text: settingsObj.footer_text || demoSiteSettings.footer_text,
+      seo_title: settingsObj.seo_title || demoSiteSettings.seo_title,
+      seo_description: settingsObj.seo_description || demoSiteSettings.seo_description,
+      og_image: settingsObj.og_image || demoSiteSettings.og_image,
+      social_links: settingsObj.social_links || demoSiteSettings.social_links,
+      updated_at: data[0]?.updated_at || new Date().toISOString(),
+    };
   } catch (err) {
-    console.warn('Supabase getSiteSettings fallback to demo data');
+    console.warn('Supabase getSiteSettings fallback to demo data:', err);
     return demoSiteSettings;
   }
 }
@@ -209,7 +244,7 @@ export async function getRelatedProjects(currentProjectId: string, categoryId?: 
   try {
     const supabase = await createClient();
     if (!supabase) {
-      return demoProjects.filter(p => p.id !== currentProjectId).slice(0, limit);
+      return demoProjects.filter((p) => p.id !== currentProjectId).slice(0, limit);
     }
 
     let query = supabase
@@ -217,9 +252,9 @@ export async function getRelatedProjects(currentProjectId: string, categoryId?: 
       .select(`
         *,
         category:categories(*),
-        media:project_media(*)
+        media:media(*)
       `)
-      .eq('is_published', true)
+      .eq('published', true)
       .neq('id', currentProjectId)
       .limit(limit);
 
@@ -229,13 +264,17 @@ export async function getRelatedProjects(currentProjectId: string, categoryId?: 
 
     const { data, error } = await query;
     if (error || !data) throw error;
-    
-    return (data as CompleteProject[]).map(project => ({
+
+    if (data.length === 0) {
+      return demoProjects.filter((p) => p.id !== currentProjectId).slice(0, limit);
+    }
+
+    return (data as CompleteProject[]).map((project) => ({
       ...project,
-      media: (project.media || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      media: (project.media || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
     }));
   } catch (err) {
-    console.warn('Supabase getRelatedProjects fallback to demo data');
-    return demoProjects.filter(p => p.id !== currentProjectId).slice(0, limit);
+    console.warn('Supabase getRelatedProjects fallback to demo data:', err);
+    return demoProjects.filter((p) => p.id !== currentProjectId).slice(0, limit);
   }
 }

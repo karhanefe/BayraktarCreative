@@ -8,8 +8,8 @@ export const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'
 export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 export const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
 
-export const BUCKET_NAME = process.env.NEXT_PUBLIC_R2_BUCKET_NAME!;
-export const PUBLIC_DOMAIN = process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN!;
+export const BUCKET_NAME = process.env.R2_BUCKET_NAME || process.env.NEXT_PUBLIC_R2_BUCKET_NAME || '';
+export const PUBLIC_DOMAIN = process.env.R2_PUBLIC_BASE_URL || process.env.R2_PUBLIC_DOMAIN || process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN || process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL || '';
 
 export async function generatePresignedUploadUrl(storageKey: string, contentType: string) {
   const command = new PutObjectCommand({

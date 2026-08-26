@@ -1,33 +1,16 @@
-import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { ArrowRight, Folder, FileImage, LayoutGrid, FileText } from 'lucide-react';
+import { getAdminStats, getAllProjects } from '@/lib/supabase/admin-queries';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-  let stats = {
-    total: 0,
-    published: 0,
-    draft: 0,
-    categories: 0,
-  };
-  let recentProjects: any[] = [];
-  let errorMsg = null;
+  const [stats, projects] = await Promise.all([
+    getAdminStats(),
+    getAllProjects(),
+  ]);
 
-  try {
-    const supabase = await createClient();
-    
-    // Mock fetching for now until admin-queries is ready
-    // Fallback UI data
-    stats = { total: 12, published: 8, draft: 4, categories: 5 };
-    recentProjects = [
-      { id: '1', title: 'Nike Air Max', category: 'Commercial', status: 'published', date: '2026-08-20' },
-      { id: '2', title: 'Summer Collection', category: 'Fashion', status: 'draft', date: '2026-08-22' },
-    ];
-  } catch (error: any) {
-    errorMsg = error.message;
-    // Provide safe defaults for UI testing
-  }
+  const recentProjects = projects.slice(0, 5);
 
   const statCards = [
     { label: 'Total Projects', value: stats.total, icon: Folder },
@@ -42,12 +25,6 @@ export default async function AdminDashboard() {
         <h1 className="text-2xl font-bold tracking-wider mb-1">Dashboard</h1>
         <p className="text-neutral-400 text-sm">Overview of your portfolio content.</p>
       </div>
-
-      {errorMsg && (
-        <div className="p-4 bg-red-950/30 border border-red-900 text-red-500 text-sm">
-          Warning: Database connection failed. Showing mock data. ({errorMsg})
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, idx) => (
@@ -71,30 +48,40 @@ export default async function AdminDashboard() {
         
         {recentProjects.length === 0 ? (
           <div className="p-8 text-center text-neutral-500 text-sm">
-            No projects found.
+            No projects found in database yet. <Link href="/admin/projects/new" className="text-[#f5f5f0] underline">Create one now</Link>.
           </div>
         ) : (
           <div className="divide-y divide-[#2a2a2a]">
             {recentProjects.map((project) => (
-              <div key={project.id} className="p-4 px-6 flex items-center justify-between hover:bg-[#2a2a2a]/30 transition-colors">
+              <Link 
+                key={project.id} 
+                href={`/admin/projects/${project.id}`}
+                className="p-4 px-6 flex items-center justify-between hover:bg-[#2a2a2a]/30 transition-colors block"
+              >
                 <div>
                   <h3 className="font-medium text-[#f5f5f0]">{project.title}</h3>
                   <div className="flex items-center gap-3 mt-1 text-xs text-neutral-500">
-                    <span>{project.category}</span>
+                    <span>{project.category?.name_en || project.category?.name_tr || 'Uncategorized'}</span>
                     <span className="w-1 h-1 rounded-full bg-neutral-700" />
-                    <span>{project.date}</span>
+                    <span>{project.year || (project.created_at ? new Date(project.created_at).getFullYear() : '')}</span>
+                    {project.featured && (
+                      <>
+                        <span className="w-1 h-1 rounded-full bg-neutral-700" />
+                        <span className="text-amber-400 font-medium">Featured</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div>
                   <span className={`text-xs px-2 py-1 rounded-sm border uppercase tracking-wider ${
-                    project.status === 'published' 
+                    project.published 
                       ? 'bg-green-950/30 text-green-500 border-green-900' 
                       : 'bg-neutral-900 text-neutral-400 border-neutral-700'
                   }`}>
-                    {project.status}
+                    {project.published ? 'published' : 'draft'}
                   </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

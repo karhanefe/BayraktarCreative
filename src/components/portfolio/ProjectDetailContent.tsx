@@ -16,10 +16,15 @@ export function ProjectDetailContent({ project, related }: ProjectDetailContentP
   const { t } = useLanguage();
 
   const media: any[] = project.media || [];
-  const coverMedia = media.find((m: any) => m.is_cover) || media[0];
+  const coverMedia = media.find((m: any) => m.is_hero || m.is_cover) || media[0];
   const isLandscape = !coverMedia || (coverMedia.width && coverMedia.height ? coverMedia.width >= coverMedia.height : true);
 
-  const categoryName = (project.category?.slug && (t.categories as Record<string, string>)[project.category.slug]) || project.category?.name || t.projectDetail.category;
+  const categoryName =
+    (project.category?.slug && (t.categories as Record<string, string>)[project.category.slug]) ||
+    project.category?.name_en ||
+    project.category?.name_tr ||
+    (project.category as any)?.name ||
+    t.projectDetail.category;
 
   return (
     <>
@@ -175,8 +180,12 @@ export function ProjectDetailContent({ project, related }: ProjectDetailContentP
           </ScrollReveal>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {related.map((p: any) => {
-              const relCover = p.media?.find((m: any) => m.is_cover) || p.media?.[0];
-              const relCatName = (p.category?.slug && (t.categories as Record<string, string>)[p.category.slug]) || p.category?.name;
+              const relCover = p.media?.find((m: any) => m.is_hero || m.is_cover) || p.media?.[0];
+              const relCatName =
+                (p.category?.slug && (t.categories as Record<string, string>)[p.category.slug]) ||
+                p.category?.name_en ||
+                p.category?.name_tr ||
+                p.category?.name;
               return (
                 <ScrollReveal key={p.id}>
                   <Link href={`/work/${p.slug}`} className="group block">

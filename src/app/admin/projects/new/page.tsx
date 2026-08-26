@@ -1,6 +1,11 @@
 import ProjectForm from '@/components/admin/ProjectForm';
+import { getAllCategories } from '@/lib/supabase/admin-queries';
 
-export default function NewProjectPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function NewProjectPage() {
+  const categories = await getAllCategories();
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div>
@@ -8,7 +13,7 @@ export default function NewProjectPage() {
         <p className="text-neutral-400 text-sm">Create a new portfolio project.</p>
       </div>
 
-      <ProjectForm />
+      <ProjectForm categories={categories} />
     </div>
   );
 }

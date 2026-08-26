@@ -4,12 +4,15 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/admin/Toast';
 import { Loader2 } from 'lucide-react';
+import { createProjectAction, updateProjectAction } from '@/app/admin/actions';
+import type { Category, CompleteProject, Project } from '@/lib/supabase/types';
 
 interface ProjectFormProps {
-  initialData?: any;
+  initialData?: Project | CompleteProject | null;
+  categories?: Category[];
 }
 
-export default function ProjectForm({ initialData }: ProjectFormProps) {
+export default function ProjectForm({ initialData, categories = [] }: ProjectFormProps) {
   const router = useRouter();
   const { success, error } = useToast();
   const [loading, setLoading] = useState(false);
@@ -17,20 +20,23 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
     slug: initialData?.slug || '',
-    category_id: initialData?.category_id || '',
+    category_id: initialData?.category_id || (categories[0]?.id || ''),
     client: initialData?.client || '',
     location: initialData?.location || '',
-    project_date: initialData?.project_date || '',
-    description: initialData?.description || '',
-    presentation_style: initialData?.presentation_style || 'Auto',
-    featured: initialData?.featured || false,
-    status: initialData?.status || 'draft',
-    tags: initialData?.tags?.join(', ') || '',
-    external_url: initialData?.external_url || '',
+    year: initialData?.year || new Date().getFullYear(),
+    hero_aspect_ratio: initialData?.hero_aspect_ratio || '16:9',
+    featured: initialData?.featured ?? false,
+    published: initialData?.published ?? false,
+    sort_order: initialData?.sort_order ?? 0,
+    description_tr: initialData?.description_tr || '',
+    description_en: initialData?.description_en || '',
   });
 
   const generateSlug = (title: string) => {
-    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
   };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,7 +48,9 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
     }));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value, type } = e.target;
     const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
     setFormData((prev) => ({ ...prev, [name]: val }));
@@ -51,18 +59,43 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     try {
-      // Mock submit
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      success(initialData ? 'Project updated successfully' : 'Project created successfully');
-      
-      if (!initialData) {
-        // Redirect to edit mode for media upload on new project
-        router.push('/admin/projects/mock-id-123');
-      } else {
+      const data = new FormData();
+      data.append('title', formData.title);
+      data.append('slug', formData.slug);
+      data.append('category_id', formData.category_id);
+      data.append('client', formData.client);
+      data.append('location', formData.location);
+      data.append('year', String(formData.year));
+      data.append('hero_aspect_ratio', formData.hero_aspect_ratio);
+      data.append('featured', formData.featured ? 'true' : 'false');
+      data.append('published', formData.published ? 'true' : 'false');
+      data.append('sort_order', String(formData.sort_order));
+      data.append('description_tr', formData.description_tr);
+      data.append('description_en', formData.description_en);
+
+      if (initialData?.id) {
+        const result = await updateProjectAction(initialData.id, data);
+        if (result?.error) {
+          throw new Error(result.error);
+        }
+        success('Project updated successfully');
         router.refresh();
+      } else {
+        const result = await createProjectAction(data);
+        if (result?.error) {
+          throw new Error(result.error);
+        }
+        success('Project created successfully');
+        if (result?.project?.id) {
+          router.push(`/admin/projects/${result.project.id}`);
+        } else {
+          router.push('/admin/projects');
+        }
       }
     } catch (err: any) {
+      console.error('ProjectForm submit error:', err);
       error(err.message || 'Something went wrong');
     } finally {
       setLoading(false);
@@ -72,29 +105,37 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] p-6 space-y-6">
-        <h2 className="text-lg font-bold tracking-wider mb-4 border-b border-[#2a2a2a] pb-4">Basic Info</h2>
-        
+        <h2 className="text-lg font-bold tracking-wider mb-4 border-b border-[#2a2a2a] pb-4">
+          Basic Information
+        </h2>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">Title *</label>
+            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
+              Title *
+            </label>
             <input
               type="text"
               name="title"
               required
               value={formData.title}
               onChange={handleTitleChange}
+              placeholder="e.g. Urban Residence"
               className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
             />
           </div>
-          
+
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">Slug *</label>
+            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
+              Slug *
+            </label>
             <input
               type="text"
               name="slug"
               required
               value={formData.slug}
               onChange={handleChange}
+              placeholder="e.g. urban-residence"
               className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
             />
           </div>
@@ -102,58 +143,141 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">Category</label>
+            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
+              Category *
+            </label>
             <select
               name="category_id"
+              required
               value={formData.category_id}
               onChange={handleChange}
               className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
             >
-              <option value="">Select Category</option>
-              <option value="1">Commercial</option>
-              <option value="2">Fashion</option>
-              <option value="3">Editorial</option>
+              <option value="" disabled>
+                Select Category
+              </option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name_en} / {cat.name_tr}
+                </option>
+              ))}
             </select>
           </div>
-          
+
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">Client</label>
+            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
+              Client
+            </label>
             <input
               type="text"
               name="client"
               value={formData.client}
               onChange={handleChange}
+              placeholder="e.g. Architectural Digest"
               className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">Date</label>
+            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
+              Location
+            </label>
             <input
-              type="date"
-              name="project_date"
-              value={formData.project_date}
+              type="text"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              placeholder="e.g. Istanbul, Turkey"
+              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-2">
+            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
+              Year
+            </label>
+            <input
+              type="number"
+              name="year"
+              value={formData.year}
+              onChange={handleChange}
+              min="2000"
+              max="2100"
+              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
+              Hero Aspect Ratio
+            </label>
+            <select
+              name="hero_aspect_ratio"
+              value={formData.hero_aspect_ratio}
+              onChange={handleChange}
+              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
+            >
+              <option value="16:9">16:9 (Landscape Standard)</option>
+              <option value="9:16">9:16 (Portrait / Reels)</option>
+              <option value="21:9">21:9 (Ultrawide Cinematic)</option>
+              <option value="1:1">1:1 (Square)</option>
+              <option value="4:5">4:5 (Vertical Editorial)</option>
+              <option value="3:4">3:4 (Portrait Medium)</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
+              Sort Order
+            </label>
+            <input
+              type="number"
+              name="sort_order"
+              value={formData.sort_order}
               onChange={handleChange}
               className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
             />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">Description</label>
-          <textarea
-            name="description"
-            rows={5}
-            value={formData.description}
-            onChange={handleChange}
-            className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors resize-y"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
+              Description (English)
+            </label>
+            <textarea
+              name="description_en"
+              rows={4}
+              value={formData.description_en}
+              onChange={handleChange}
+              placeholder="English description of the project..."
+              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors resize-y"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
+              Description (Turkish)
+            </label>
+            <textarea
+              name="description_tr"
+              rows={4}
+              value={formData.description_tr}
+              onChange={handleChange}
+              placeholder="Projenin Türkçe açıklaması..."
+              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors resize-y"
+            />
+          </div>
         </div>
       </div>
 
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] p-6 space-y-6">
-        <h2 className="text-lg font-bold tracking-wider mb-4 border-b border-[#2a2a2a] pb-4">Settings & Meta</h2>
-        
+        <h2 className="text-lg font-bold tracking-wider mb-4 border-b border-[#2a2a2a] pb-4">
+          Publication & Featured Status
+        </h2>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <label className="flex items-center gap-3 cursor-pointer">
@@ -166,35 +290,26 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
               />
               <span className="text-sm font-medium">Featured Project</span>
             </label>
-            <p className="text-xs text-neutral-500 ml-8">Show on homepage featured section</p>
+            <p className="text-xs text-neutral-500 ml-8">
+              Display in the homepage curated featured work showcase
+            </p>
           </div>
 
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">Status</label>
-              <select
-                name="status"
-                value={formData.status}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                name="published"
+                checked={formData.published}
                 onChange={handleChange}
-                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-              </select>
-            </div>
+                className="w-5 h-5 accent-white bg-[#0a0a0a] border-[#2a2a2a]"
+              />
+              <span className="text-sm font-medium">Published</span>
+            </label>
+            <p className="text-xs text-neutral-500 ml-8">
+              Make this project publicly visible on the portfolio
+            </p>
           </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">Tags (comma separated)</label>
-          <input
-            type="text"
-            name="tags"
-            value={formData.tags}
-            onChange={handleChange}
-            placeholder="e.g. nike, shoes, commercial"
-            className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
-          />
         </div>
       </div>
 

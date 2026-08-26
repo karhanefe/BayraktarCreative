@@ -12,190 +12,81 @@ export type Database = {
       categories: {
         Row: {
           id: string;
-          name: string;
+          name_tr: string;
+          name_en: string;
           slug: string;
-          description: string | null;
-          sort_order: number | null;
-          is_visible: boolean | null;
-          created_at: string | null;
-          updated_at: string | null;
+          sort_order: number;
+          created_at: string;
         };
         Insert: {
           id?: string;
-          name: string;
+          name_tr: string;
+          name_en: string;
           slug: string;
-          description?: string | null;
-          sort_order?: number | null;
-          is_visible?: boolean | null;
-          created_at?: string | null;
-          updated_at?: string | null;
+          sort_order?: number;
+          created_at?: string;
         };
         Update: {
           id?: string;
-          name?: string;
+          name_tr?: string;
+          name_en?: string;
           slug?: string;
-          description?: string | null;
-          sort_order?: number | null;
-          is_visible?: boolean | null;
-          created_at?: string | null;
-          updated_at?: string | null;
+          sort_order?: number;
+          created_at?: string;
         };
         Relationships: [];
-      };
-      profiles: {
-        Row: {
-          id: string;
-          auth_user_id: string;
-          role: 'admin' | 'editor' | 'viewer';
-          display_name: string | null;
-          is_active: boolean | null;
-          created_at: string | null;
-          updated_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          auth_user_id: string;
-          role?: 'admin' | 'editor' | 'viewer';
-          display_name?: string | null;
-          is_active?: boolean | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          auth_user_id?: string;
-          role?: 'admin' | 'editor' | 'viewer';
-          display_name?: string | null;
-          is_active?: boolean | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-        };
-        Relationships: [];
-      };
-      project_media: {
-        Row: {
-          id: string;
-          project_id: string;
-          media_type: 'image' | 'video';
-          storage_key: string;
-          url: string;
-          thumbnail_url: string | null;
-          poster_url: string | null;
-          mime_type: string;
-          file_size: number | null;
-          width: number | null;
-          height: number | null;
-          duration: number | null;
-          sort_order: number | null;
-          is_cover: boolean | null;
-          presentation_override: 'auto' | 'portrait' | 'landscape' | 'square' | 'wide' | 'ultrawide' | 'full-bleed' | 'contained' | null;
-          alt_text: string | null;
-          created_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          project_id: string;
-          media_type: 'image' | 'video';
-          storage_key: string;
-          url: string;
-          thumbnail_url?: string | null;
-          poster_url?: string | null;
-          mime_type: string;
-          file_size?: number | null;
-          width?: number | null;
-          height?: number | null;
-          duration?: number | null;
-          sort_order?: number | null;
-          is_cover?: boolean | null;
-          presentation_override?: 'auto' | 'portrait' | 'landscape' | 'square' | 'wide' | 'ultrawide' | 'full-bleed' | 'contained' | null;
-          alt_text?: string | null;
-          created_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          project_id?: string;
-          media_type?: 'image' | 'video';
-          storage_key?: string;
-          url?: string;
-          thumbnail_url?: string | null;
-          poster_url?: string | null;
-          mime_type?: string;
-          file_size?: number | null;
-          width?: number | null;
-          height?: number | null;
-          duration?: number | null;
-          sort_order?: number | null;
-          is_cover?: boolean | null;
-          presentation_override?: 'auto' | 'portrait' | 'landscape' | 'square' | 'wide' | 'ultrawide' | 'full-bleed' | 'contained' | null;
-          alt_text?: string | null;
-          created_at?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "project_media_project_id_fkey";
-            columns: ["project_id"];
-            referencedRelation: "projects";
-            referencedColumns: ["id"];
-          }
-        ];
       };
       projects: {
         Row: {
           id: string;
           title: string;
           slug: string;
-          category_id: string | null;
+          description_tr: string | null;
+          description_en: string | null;
+          category_id: string;
           client: string | null;
           location: string | null;
-          description: string | null;
-          project_date: string | null;
-          is_published: boolean | null;
-          is_featured: boolean | null;
-          featured_order: number | null;
-          presentation_style: 'auto' | 'portrait' | 'landscape' | 'square' | 'wide' | 'full-bleed' | 'contained' | 'editorial' | null;
-          sort_order: number | null;
-          external_url: string | null;
-          tags: string[] | null;
-          created_at: string | null;
-          updated_at: string | null;
+          year: number;
+          hero_aspect_ratio: string;
+          featured: boolean;
+          published: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
           title: string;
           slug: string;
-          category_id?: string | null;
+          description_tr?: string | null;
+          description_en?: string | null;
+          category_id: string;
           client?: string | null;
           location?: string | null;
-          description?: string | null;
-          project_date?: string | null;
-          is_published?: boolean | null;
-          is_featured?: boolean | null;
-          featured_order?: number | null;
-          presentation_style?: 'auto' | 'portrait' | 'landscape' | 'square' | 'wide' | 'full-bleed' | 'contained' | 'editorial' | null;
-          sort_order?: number | null;
-          external_url?: string | null;
-          tags?: string[] | null;
-          created_at?: string | null;
-          updated_at?: string | null;
+          year?: number;
+          hero_aspect_ratio?: string;
+          featured?: boolean;
+          published?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
           title?: string;
           slug?: string;
-          category_id?: string | null;
+          description_tr?: string | null;
+          description_en?: string | null;
+          category_id?: string;
           client?: string | null;
           location?: string | null;
-          description?: string | null;
-          project_date?: string | null;
-          is_published?: boolean | null;
-          is_featured?: boolean | null;
-          featured_order?: number | null;
-          presentation_style?: 'auto' | 'portrait' | 'landscape' | 'square' | 'wide' | 'full-bleed' | 'contained' | 'editorial' | null;
-          sort_order?: number | null;
-          external_url?: string | null;
-          tags?: string[] | null;
-          created_at?: string | null;
-          updated_at?: string | null;
+          year?: number;
+          hero_aspect_ratio?: string;
+          featured?: boolean;
+          published?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [
           {
@@ -206,54 +97,109 @@ export type Database = {
           }
         ];
       };
-      site_settings: {
+      media: {
         Row: {
           id: string;
-          site_title: string | null;
-          tagline: string | null;
-          phone: string | null;
-          email: string | null;
-          instagram: string | null;
-          whatsapp: string | null;
-          about_text: string | null;
-          contact_text: string | null;
-          footer_text: string | null;
-          seo_title: string | null;
-          seo_description: string | null;
-          og_image: string | null;
-          updated_at: string | null;
+          project_id: string;
+          type: 'image' | 'video';
+          url: string;
+          aspect_ratio: string;
+          width: number;
+          height: number;
+          is_hero: boolean;
+          sort_order: number;
+          caption_tr: string | null;
+          caption_en: string | null;
+          poster_url: string | null;
+          created_at: string;
         };
         Insert: {
           id?: string;
-          site_title?: string | null;
-          tagline?: string | null;
-          phone?: string | null;
-          email?: string | null;
-          instagram?: string | null;
-          whatsapp?: string | null;
-          about_text?: string | null;
-          contact_text?: string | null;
-          footer_text?: string | null;
-          seo_title?: string | null;
-          seo_description?: string | null;
-          og_image?: string | null;
-          updated_at?: string | null;
+          project_id: string;
+          type: 'image' | 'video';
+          url: string;
+          aspect_ratio?: string;
+          width?: number;
+          height?: number;
+          is_hero?: boolean;
+          sort_order?: number;
+          caption_tr?: string | null;
+          caption_en?: string | null;
+          poster_url?: string | null;
+          created_at?: string;
         };
         Update: {
           id?: string;
-          site_title?: string | null;
-          tagline?: string | null;
-          phone?: string | null;
-          email?: string | null;
-          instagram?: string | null;
-          whatsapp?: string | null;
-          about_text?: string | null;
-          contact_text?: string | null;
-          footer_text?: string | null;
-          seo_title?: string | null;
-          seo_description?: string | null;
-          og_image?: string | null;
-          updated_at?: string | null;
+          project_id?: string;
+          type?: 'image' | 'video';
+          url?: string;
+          aspect_ratio?: string;
+          width?: number;
+          height?: number;
+          is_hero?: boolean;
+          sort_order?: number;
+          caption_tr?: string | null;
+          caption_en?: string | null;
+          poster_url?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "media_project_id_fkey";
+            columns: ["project_id"];
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      site_settings: {
+        Row: {
+          id: string;
+          key: string;
+          value: Json;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          key: string;
+          value: Json;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          key?: string;
+          value?: Json;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      profiles: {
+        Row: {
+          id: string;
+          auth_user_id: string;
+          role: 'admin' | 'editor' | 'viewer';
+          display_name: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          auth_user_id: string;
+          role?: 'admin' | 'editor' | 'viewer';
+          display_name?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          auth_user_id?: string;
+          role?: 'admin' | 'editor' | 'viewer';
+          display_name?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };
@@ -276,20 +222,54 @@ export type Database = {
   };
 };
 
-export type Profile = Database['public']['Tables']['profiles']['Row'];
+// Base row types
 export type Category = Database['public']['Tables']['categories']['Row'];
 export type Project = Database['public']['Tables']['projects']['Row'];
-export type ProjectMedia = Database['public']['Tables']['project_media']['Row'];
-export type SiteSettings = Database['public']['Tables']['site_settings']['Row'];
+export type Media = Database['public']['Tables']['media']['Row'];
+export type SiteSettingRow = Database['public']['Tables']['site_settings']['Row'];
+export type Profile = Database['public']['Tables']['profiles']['Row'];
 
+// Backward compatibility alias for Media
+export type ProjectMedia = Media;
+
+// Composite / Joined Types
 export type ProjectWithCategory = Project & {
   category: Category | null;
 };
 
 export type ProjectWithMedia = Project & {
-  media: ProjectMedia[];
+  media: Media[];
 };
 
-export type CompleteProject = ProjectWithCategory & {
-  media: ProjectMedia[];
+export type CompleteProject = Project & {
+  category: Category | null;
+  media: Media[];
 };
+
+// Parsed site settings model
+export interface SiteSettings {
+  id?: string;
+  site_title?: {
+    tr?: string;
+    en?: string;
+  } | string;
+  tagline?: string;
+  phone?: string;
+  email?: string;
+  instagram?: string;
+  whatsapp?: string;
+  about_text?: string;
+  contact_text?: string;
+  footer_text?: string;
+  seo_title?: string;
+  seo_description?: string;
+  og_image?: string;
+  social_links?: {
+    instagram?: string;
+    vimeo?: string;
+    youtube?: string;
+    whatsapp?: string;
+    [key: string]: string | undefined;
+  };
+  updated_at?: string;
+}

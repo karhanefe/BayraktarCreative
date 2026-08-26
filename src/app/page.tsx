@@ -11,7 +11,7 @@ import { ContactCTA } from '@/components/home/ContactCTA';
 export const revalidate = 3600;
 
 export default async function Home() {
-  let featuredProjects = demoProjects.filter(p => p.is_featured);
+  let featuredProjects = demoProjects.filter((p) => p.featured);
   let allProjects = demoProjects;
   let categories = demoCategories;
   let customAboutText: string | null = null;

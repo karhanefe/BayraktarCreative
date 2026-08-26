@@ -12,13 +12,18 @@ export interface ProjectGridProps {
 
 export function ProjectGrid({ projects = [], categories: initialCategories = [] }: ProjectGridProps) {
   const [activeCategorySlug, setActiveCategorySlug] = useState('all');
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
   const categoryList = [
     { id: 'all', name: t.workPage.all, slug: 'all' },
     ...initialCategories.map((c) => ({
       id: c.id || c.slug,
-      name: (t.categories as Record<string, string>)[c.slug] || c.name,
+      name:
+        (t.categories as Record<string, string>)[c.slug] ||
+        (locale === 'tr' ? c.name_tr : c.name_en) ||
+        c.name_en ||
+        c.name_tr ||
+        c.name,
       slug: c.slug,
     })),
   ];

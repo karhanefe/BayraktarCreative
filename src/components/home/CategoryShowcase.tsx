@@ -12,7 +12,7 @@ export interface CategoryShowcaseProps {
 
 export function CategoryShowcase({ categories: passedCategories }: CategoryShowcaseProps) {
   const [hovered, setHovered] = useState<string | null>(null);
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
   const fallback = [
     { id: 'commercial', name: t.categories['commercial'], slug: 'commercial' },
@@ -34,7 +34,12 @@ export function CategoryShowcase({ categories: passedCategories }: CategoryShowc
 
         <div className="flex flex-col group/list border-t border-bc-white/10">
           {list.map((cat, idx) => {
-            const localizedName = (t.categories as Record<string, string>)[cat.slug] || cat.name;
+            const localizedName =
+              (t.categories as Record<string, string>)[cat.slug] ||
+              (locale === 'tr' ? cat.name_tr : cat.name_en) ||
+              cat.name_en ||
+              cat.name_tr ||
+              cat.name;
             return (
               <ScrollReveal key={cat.id || idx} delay={idx * 0.08}>
                 <Link

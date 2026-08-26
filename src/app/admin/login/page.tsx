@@ -31,12 +31,6 @@ export default function LoginPage() {
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to login. Check credentials.');
-      
-      // Development bypass: if supabase is not connected, allow bypass
-      if (err.message?.includes('fetch failed') || err.message?.includes('URL')) {
-        setError('Supabase connection failed. Bypassing for UI dev...');
-        setTimeout(() => router.push('/admin'), 1500);
-      }
     } finally {
       setLoading(false);
     }
