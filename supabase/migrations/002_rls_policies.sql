@@ -26,6 +26,7 @@ ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 DROP POLICY IF EXISTS "Admins can do everything on profiles" ON profiles;
+DROP POLICY IF EXISTS "Allow authenticated users to read own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
 CREATE POLICY "Users can view own profile"
   ON profiles FOR SELECT
@@ -39,6 +40,8 @@ CREATE POLICY "Admins can manage profiles"
 
 DROP POLICY IF EXISTS "Categories are viewable by everyone" ON categories;
 DROP POLICY IF EXISTS "Admins can do everything on categories" ON categories;
+DROP POLICY IF EXISTS "Allow public read categories" ON categories;
+DROP POLICY IF EXISTS "Allow admin all categories" ON categories;
 DROP POLICY IF EXISTS "Categories are publicly readable" ON categories;
 CREATE POLICY "Categories are publicly readable"
   ON categories FOR SELECT
@@ -52,6 +55,8 @@ CREATE POLICY "Admins can manage categories"
 
 DROP POLICY IF EXISTS "Published projects are viewable by everyone" ON projects;
 DROP POLICY IF EXISTS "Admins can do everything on projects" ON projects;
+DROP POLICY IF EXISTS "Allow public read published projects" ON projects;
+DROP POLICY IF EXISTS "Allow admin all projects" ON projects;
 DROP POLICY IF EXISTS "Published projects are publicly readable" ON projects;
 CREATE POLICY "Published projects are publicly readable"
   ON projects FOR SELECT
@@ -63,6 +68,7 @@ CREATE POLICY "Admins can manage projects"
   USING (is_admin())
   WITH CHECK (is_admin());
 
+DROP POLICY IF EXISTS "Allow public read published media" ON media;
 DROP POLICY IF EXISTS "Published project media is publicly readable" ON media;
 CREATE POLICY "Published project media is publicly readable"
   ON media FOR SELECT
@@ -75,6 +81,7 @@ CREATE POLICY "Published project media is publicly readable"
     )
   );
 
+DROP POLICY IF EXISTS "Allow admin all media" ON media;
 DROP POLICY IF EXISTS "Admins can manage media" ON media;
 CREATE POLICY "Admins can manage media"
   ON media FOR ALL
@@ -83,6 +90,8 @@ CREATE POLICY "Admins can manage media"
 
 DROP POLICY IF EXISTS "Site settings are viewable by everyone" ON site_settings;
 DROP POLICY IF EXISTS "Admins can update site settings" ON site_settings;
+DROP POLICY IF EXISTS "Allow public read site_settings" ON site_settings;
+DROP POLICY IF EXISTS "Allow admin all site_settings" ON site_settings;
 DROP POLICY IF EXISTS "Site settings are publicly readable" ON site_settings;
 CREATE POLICY "Site settings are publicly readable"
   ON site_settings FOR SELECT
