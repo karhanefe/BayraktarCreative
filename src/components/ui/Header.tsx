@@ -2,16 +2,23 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 import { MobileNav } from './MobileNav';
+import type { SiteSettings } from '@/lib/supabase/types';
 
-export function Header() {
+export function Header({ siteTitle }: { siteTitle?: SiteSettings['site_title'] }) {
+  const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { locale, setLocale, t } = useLanguage();
+  const localizedTitle = typeof siteTitle === 'object'
+    ? siteTitle?.[locale] || siteTitle?.tr || siteTitle?.en
+    : siteTitle;
+  const brandTitle = localizedTitle?.split(/—|\|/)[0].trim() || 'BAYRAKTAR CREATIVE';
 
   const handleScroll = useCallback(() => {
     const currentScrollY = window.scrollY;
@@ -32,6 +39,10 @@ export function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <>
       <header
@@ -50,7 +61,7 @@ export function Header() {
             href="/"
             className="text-bc-white font-bold text-sm md:text-base tracking-[0.15em] uppercase z-50 hover:opacity-80 transition-opacity"
           >
-            BAYRAKTAR CREATIVE
+            {brandTitle}
           </Link>
 
           {/* Desktop Navigation */}

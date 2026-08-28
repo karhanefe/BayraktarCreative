@@ -8,9 +8,10 @@ import { ScrollIndicator } from '@/components/ui/ScrollIndicator';
 
 export interface HeroProps {
   projects?: any[];
+  tagline?: string;
 }
 
-export function Hero({ projects }: HeroProps) {
+export function Hero({ projects, tagline }: HeroProps) {
   const containerRef = useRef<HTMLElement>(null);
   const bgRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -175,7 +176,7 @@ export function Hero({ projects }: HeroProps) {
             'text-[clamp(0.875rem,1.5vw,1.125rem)] tracking-[0.1em] uppercase leading-relaxed'
           )}
         >
-          {t.hero.subtitle}
+          {tagline || t.hero.subtitle}
         </p>
       </div>
 

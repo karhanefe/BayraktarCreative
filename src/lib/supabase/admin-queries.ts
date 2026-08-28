@@ -1,5 +1,6 @@
 import { createClient } from './server';
-import type { Database, Project, Category, Media, SiteSettingRow, CompleteProject } from './types';
+import type { Database, Project, Category, Media, CompleteProject } from './types';
+import { demoCategories, demoProjects, demoSiteSettings } from '../demo-data';
 
 export async function isUserAdmin(userId: string): Promise<boolean> {
   const supabase = await createClient();
@@ -313,6 +314,20 @@ export async function getProjectMediaList(projectId: string): Promise<Media[]> {
   return data as Media[];
 }
 
+export async function getMediaItem(id: string): Promise<Media | null> {
+  const supabase = await createClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from('media')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error || !data) return null;
+  return data as Media;
+}
+
 export async function deleteMediaItem(id: string): Promise<void> {
   const supabase = await createClient();
   if (!supabase) throw new Error('Database not configured');
@@ -391,4 +406,117 @@ export async function generateUniqueSlug(title: string, existingSlug?: string): 
   }
 
   return slug;
+}
+
+export async function importDemoContent(): Promise<{ projects: number; media: number; settings: number }> {
+  const supabase = await createClient();
+  if (!supabase) throw new Error('Database not configured');
+
+  const { count, error: countError } = await supabase
+    .from('projects')
+    .select('*', { count: 'exact', head: true });
+
+  if (countError) throw countError;
+  if ((count || 0) > 0) {
+    throw new Error('Example content can only be imported into an empty project library');
+  }
+
+  const categoryIds = new Map<string, string>();
+  for (const category of demoCategories) {
+    const { data, error } = await supabase
+      .from('categories')
+      .upsert({
+        name_tr: category.name_tr,
+        name_en: category.name_en,
+        slug: category.slug,
+        sort_order: category.sort_order,
+      }, { onConflict: 'slug' })
+      .select('id, slug')
+      .single();
+
+    if (error || !data) throw error || new Error(`Failed to import category ${category.slug}`);
+    categoryIds.set(data.slug, data.id);
+  }
+
+  let importedProjects = 0;
+  let importedMedia = 0;
+
+  for (const demoProject of demoProjects) {
+    const categorySlug = demoProject.category?.slug;
+    const categoryId = categorySlug ? categoryIds.get(categorySlug) : undefined;
+    if (!categoryId) throw new Error(`Missing category for ${demoProject.title}`);
+
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .insert({
+        title: demoProject.title,
+        slug: demoProject.slug,
+        description_tr: demoProject.description_tr,
+        description_en: demoProject.description_en,
+        category_id: categoryId,
+        client: demoProject.client,
+        location: demoProject.location,
+        year: demoProject.year,
+        hero_aspect_ratio: demoProject.hero_aspect_ratio,
+        featured: demoProject.featured,
+        published: demoProject.published,
+        sort_order: demoProject.sort_order,
+      })
+      .select('id')
+      .single();
+
+    if (projectError || !project) throw projectError || new Error(`Failed to import ${demoProject.title}`);
+    importedProjects++;
+
+    const mediaRows: Database['public']['Tables']['media']['Insert'][] = (demoProject.media || []).map((item) => ({
+      project_id: project.id,
+      type: item.type,
+      url: item.url,
+      aspect_ratio: item.aspect_ratio,
+      width: item.width,
+      height: item.height,
+      is_hero: item.is_hero,
+      sort_order: item.sort_order,
+      caption_tr: item.caption_tr,
+      caption_en: item.caption_en,
+      poster_url: item.poster_url,
+    }));
+
+    if (mediaRows.length > 0) {
+      const { error: mediaError } = await supabase.from('media').insert(mediaRows);
+      if (mediaError) throw mediaError;
+      importedMedia += mediaRows.length;
+    }
+  }
+
+  const settingDefaults: Record<string, unknown> = {
+    site_title: demoSiteSettings.site_title,
+    tagline: demoSiteSettings.tagline,
+    contact_phone: demoSiteSettings.phone,
+    contact_email: demoSiteSettings.email,
+    social_links: demoSiteSettings.social_links,
+    about_text: demoSiteSettings.about_text,
+    contact_text: demoSiteSettings.contact_text,
+    footer_text: demoSiteSettings.footer_text,
+    seo_title: demoSiteSettings.seo_title,
+    seo_description: demoSiteSettings.seo_description,
+    og_image: demoSiteSettings.og_image,
+  };
+
+  const { data: existingSettings, error: settingsError } = await supabase
+    .from('site_settings')
+    .select('key');
+  if (settingsError) throw settingsError;
+
+  const existingKeys = new Set((existingSettings || []).map((row) => row.key));
+  const missingSettings = Object.entries(settingDefaults)
+    .filter(([key, value]) => !existingKeys.has(key) && value !== undefined)
+    .map(([key, value]) => ({ key, value: value as Database['public']['Tables']['site_settings']['Insert']['value'] }));
+
+  if (missingSettings.length > 0) {
+    const { error } = await supabase.from('site_settings').insert(missingSettings);
+    if (error) throw error;
+  }
+
+  return { projects: importedProjects, media: importedMedia, settings: missingSettings.length };
 }

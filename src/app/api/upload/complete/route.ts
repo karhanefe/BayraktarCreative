@@ -26,9 +26,13 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { 
       projectId, 
+      storageKey,
       url, 
       mediaType, 
       type,
+      mimeType,
+      fileSize,
+      duration,
       width, 
       height, 
       aspect_ratio,
@@ -43,8 +47,12 @@ export async function POST(request: Request) {
 
     const actualType = mediaType || type || 'image';
 
-    if (!projectId || !url) {
+    if (!projectId || !storageKey || !url) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    if (actualType !== 'image' && actualType !== 'video') {
+      return NextResponse.json({ error: 'Invalid media type' }, { status: 400 });
     }
 
     // Verify project exists
@@ -61,6 +69,13 @@ export async function POST(request: Request) {
     const w = width || (actualType === 'video' ? 1920 : 1920);
     const h = height || (actualType === 'video' ? 1080 : 1080);
     const calculatedAspect = `${w}:${h}`;
+    const { count: currentMediaCount, error: countError } = await supabase
+      .from('media')
+      .select('*', { count: 'exact', head: true })
+      .eq('project_id', projectId);
+
+    if (countError) throw countError;
+    const shouldBeHero = is_hero ?? is_cover ?? (currentMediaCount === 0);
 
     // Create media record in live "media" table
     const { data: media, error: mediaError } = await supabase
@@ -72,11 +87,15 @@ export async function POST(request: Request) {
         aspect_ratio: aspect_ratio || calculatedAspect,
         width: w,
         height: h,
-        is_hero: is_hero ?? is_cover ?? false,
         sort_order: sort_order || 0,
         caption_tr: caption_tr || alt_text || null,
         caption_en: caption_en || alt_text || null,
         poster_url: poster_url || null,
+        storage_key: storageKey,
+        mime_type: mimeType || null,
+        file_size: fileSize || null,
+        duration: duration || null,
+        is_hero: shouldBeHero,
       })
       .select()
       .single();

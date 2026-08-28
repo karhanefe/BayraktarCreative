@@ -14,7 +14,7 @@ export async function requestPresignedUrl(file: File, projectId: string) {
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || 'Failed to get presigned URL');
+    throw new Error(error.error || error.message || 'Failed to get presigned URL');
   }
 
   return response.json();
@@ -91,7 +91,7 @@ export async function uploadMedia(
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || 'Failed to complete upload');
+    throw new Error(error.error || error.message || 'Failed to complete upload');
   }
 
   return response.json();

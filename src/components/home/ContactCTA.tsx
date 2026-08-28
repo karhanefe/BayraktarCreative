@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ScrollReveal } from '@/components/animation/ScrollReveal';
 import { useLanguage } from '@/context/LanguageContext';
 
-export function ContactCTA() {
+export function ContactCTA({ email, contactText }: { email?: string; contactText?: string }) {
   const { t } = useLanguage();
 
   return (
@@ -13,7 +13,7 @@ export function ContactCTA() {
       <div className="relative z-10 flex flex-col items-center">
         <ScrollReveal>
           <h2 className="text-4xl md:text-8xl font-bold tracking-tighter max-w-4xl mx-auto mb-12 leading-[1.1] uppercase">
-            {t.contactCTA.title}
+            {contactText || t.contactCTA.title}
           </h2>
         </ScrollReveal>
 
@@ -28,10 +28,10 @@ export function ContactCTA() {
 
         <ScrollReveal delay={0.3} className="mt-8">
           <a
-            href={`mailto:${t.contactCTA.email}`}
+            href={`mailto:${email || t.contactCTA.email}`}
             className="text-xs md:text-sm font-mono tracking-widest text-bc-black/60 hover:text-bc-black transition-colors"
           >
-            {t.contactCTA.email.toUpperCase()}
+            {(email || t.contactCTA.email).toUpperCase()}
           </a>
         </ScrollReveal>
       </div>

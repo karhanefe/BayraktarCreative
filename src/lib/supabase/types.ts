@@ -111,6 +111,10 @@ export type Database = {
           caption_tr: string | null;
           caption_en: string | null;
           poster_url: string | null;
+          storage_key?: string | null;
+          mime_type?: string | null;
+          file_size?: number | null;
+          duration?: number | null;
           created_at: string;
         };
         Insert: {
@@ -126,6 +130,10 @@ export type Database = {
           caption_tr?: string | null;
           caption_en?: string | null;
           poster_url?: string | null;
+          storage_key?: string | null;
+          mime_type?: string | null;
+          file_size?: number | null;
+          duration?: number | null;
           created_at?: string;
         };
         Update: {
@@ -141,6 +149,10 @@ export type Database = {
           caption_tr?: string | null;
           caption_en?: string | null;
           poster_url?: string | null;
+          storage_key?: string | null;
+          mime_type?: string | null;
+          file_size?: number | null;
+          duration?: number | null;
           created_at?: string;
         };
         Relationships: [

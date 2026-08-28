@@ -12,6 +12,7 @@ export interface ContactContentProps {
     phone?: string | null;
     instagram?: string | null;
     whatsapp?: string | null;
+    contact_text?: string | null;
   };
 }
 
@@ -38,6 +39,11 @@ export function ContactContent({ settings }: ContactContentProps) {
           text={t.contactPage.title}
           className="text-4xl md:text-7xl lg:text-[6.5rem] leading-[0.95] font-display font-bold uppercase tracking-tighter max-w-5xl"
         />
+        {settings?.contact_text && (
+          <p className="mt-8 max-w-3xl text-lg leading-relaxed text-bc-white/65 md:text-2xl">
+            {settings.contact_text}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-16 lg:gap-32 items-start">

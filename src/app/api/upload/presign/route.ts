@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { isUserAdmin } from '@/lib/supabase/admin-queries';
-import { generatePresignedUploadUrl, validateUploadRequest, sanitizeFilename, getPublicUrl } from '@/lib/r2/upload';
+import { generatePresignedUploadUrl, validateUploadRequest, sanitizeFilename, getPublicUrl, isR2Configured } from '@/lib/r2/upload';
 
 export async function POST(request: Request) {
   try {
@@ -24,11 +24,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden: Admin privilege required' }, { status: 403 });
     }
 
+    if (!isR2Configured()) {
+      return NextResponse.json(
+        { error: 'Media storage is not configured. Add the Cloudflare R2 environment variables in Vercel.' },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { filename, contentType, fileSize, projectId } = body;
 
     if (!filename || !contentType || !fileSize || !projectId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('id', projectId)
+      .single();
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     const validation = validateUploadRequest(filename, contentType, fileSize);

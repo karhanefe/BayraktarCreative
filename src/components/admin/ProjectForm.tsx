@@ -6,6 +6,7 @@ import { useToast } from '@/components/admin/Toast';
 import { Loader2 } from 'lucide-react';
 import { createProjectAction, updateProjectAction } from '@/app/admin/actions';
 import type { Category, CompleteProject, Project } from '@/lib/supabase/types';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface ProjectFormProps {
   initialData?: Project | CompleteProject | null;
@@ -14,6 +15,7 @@ interface ProjectFormProps {
 
 export default function ProjectForm({ initialData, categories = [] }: ProjectFormProps) {
   const router = useRouter();
+  const { t, locale } = useLanguage();
   const { success, error } = useToast();
   const [loading, setLoading] = useState(false);
 
@@ -80,14 +82,14 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
         if (result?.error) {
           throw new Error(result.error);
         }
-        success('Project updated successfully');
+        success(t.admin.projectForm.updatedSuccess);
         router.refresh();
       } else {
         const result = await createProjectAction(data);
         if (result?.error) {
           throw new Error(result.error);
         }
-        success('Project created successfully');
+        success(t.admin.projectForm.createdSuccess);
         if (result?.project?.id) {
           router.push(`/admin/projects/${result.project.id}`);
         } else {
@@ -103,16 +105,16 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in duration-500">
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] p-6 space-y-6">
-        <h2 className="text-lg font-bold tracking-wider mb-4 border-b border-[#2a2a2a] pb-4">
-          Basic Information
+        <h2 className="text-base font-bold tracking-wider mb-4 border-b border-[#2a2a2a] pb-4">
+          {t.admin.projectForm.detailsTab}
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
-              Title *
+              {t.admin.projectForm.titleLabel} *
             </label>
             <input
               type="text"
@@ -127,7 +129,7 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
 
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
-              Slug *
+              {t.admin.projectForm.slugLabel} *
             </label>
             <input
               type="text"
@@ -136,7 +138,7 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
               value={formData.slug}
               onChange={handleChange}
               placeholder="e.g. urban-residence"
-              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
+              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors font-mono text-sm"
             />
           </div>
         </div>
@@ -144,21 +146,21 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
-              Category *
+              {t.admin.projectForm.categoryLabel} *
             </label>
             <select
               name="category_id"
               required
               value={formData.category_id}
               onChange={handleChange}
-              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
+              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors text-sm"
             >
               <option value="" disabled>
-                Select Category
+                {t.admin.projectForm.categoryLabel}
               </option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
-                  {cat.name_en} / {cat.name_tr}
+                  {locale === 'tr' ? cat.name_tr || cat.name_en : cat.name_en || cat.name_tr}
                 </option>
               ))}
             </select>
@@ -166,7 +168,7 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
 
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
-              Client
+              {t.admin.projectForm.clientLabel}
             </label>
             <input
               type="text"
@@ -180,7 +182,7 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
 
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
-              Location
+              {t.admin.projectForm.locationLabel}
             </label>
             <input
               type="text"
@@ -196,7 +198,7 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
-              Year
+              {t.admin.projectForm.yearLabel}
             </label>
             <input
               type="number"
@@ -205,19 +207,19 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
               onChange={handleChange}
               min="2000"
               max="2100"
-              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
+              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors font-mono"
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
-              Hero Aspect Ratio
+              {t.admin.projectForm.heroAspectLabel}
             </label>
             <select
               name="hero_aspect_ratio"
               value={formData.hero_aspect_ratio}
               onChange={handleChange}
-              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
+              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors font-mono text-sm"
             >
               <option value="16:9">16:9 (Landscape Standard)</option>
               <option value="9:16">9:16 (Portrait / Reels)</option>
@@ -230,14 +232,14 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
 
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
-              Sort Order
+              {t.admin.categories.orderLabel}
             </label>
             <input
               type="number"
               name="sort_order"
               value={formData.sort_order}
               onChange={handleChange}
-              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors"
+              className="w-full bg-[#0a0a0a] border border-[#2a2a2a] p-3 text-[#f5f5f0] focus:outline-none focus:border-neutral-500 transition-colors font-mono"
             />
           </div>
         </div>
@@ -245,7 +247,7 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
-              Description (English)
+              {t.admin.projectForm.descEnLabel}
             </label>
             <textarea
               name="description_en"
@@ -259,7 +261,7 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
 
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
-              Description (Turkish)
+              {t.admin.projectForm.descTrLabel}
             </label>
             <textarea
               name="description_tr"
@@ -274,40 +276,40 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
       </div>
 
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] p-6 space-y-6">
-        <h2 className="text-lg font-bold tracking-wider mb-4 border-b border-[#2a2a2a] pb-4">
-          Publication & Featured Status
+        <h2 className="text-base font-bold tracking-wider mb-4 border-b border-[#2a2a2a] pb-4">
+          {t.admin.common.status}
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
+          <div className="space-y-2 bg-[#0a0a0a] p-4 border border-[#2a2a2a]">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 name="featured"
                 checked={formData.featured}
                 onChange={handleChange}
-                className="w-5 h-5 accent-white bg-[#0a0a0a] border-[#2a2a2a]"
+                className="w-4 h-4 accent-white bg-[#0a0a0a] border-[#2a2a2a]"
               />
-              <span className="text-sm font-medium">Featured Project</span>
+              <span className="text-sm font-bold text-[#f5f5f0]">{t.admin.projectForm.featuredLabel}</span>
             </label>
-            <p className="text-xs text-neutral-500 ml-8">
-              Display in the homepage curated featured work showcase
+            <p className="text-xs text-neutral-400 pl-7">
+              {t.admin.projectForm.featuredDesc}
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-2 bg-[#0a0a0a] p-4 border border-[#2a2a2a]">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 name="published"
                 checked={formData.published}
                 onChange={handleChange}
-                className="w-5 h-5 accent-white bg-[#0a0a0a] border-[#2a2a2a]"
+                className="w-4 h-4 accent-white bg-[#0a0a0a] border-[#2a2a2a]"
               />
-              <span className="text-sm font-medium">Published</span>
+              <span className="text-sm font-bold text-[#f5f5f0]">{t.admin.projectForm.publishedLabel}</span>
             </label>
-            <p className="text-xs text-neutral-500 ml-8">
-              Make this project publicly visible on the portfolio
+            <p className="text-xs text-neutral-400 pl-7">
+              {t.admin.projectForm.publishedDesc}
             </p>
           </div>
         </div>
@@ -317,17 +319,17 @@ export default function ProjectForm({ initialData, categories = [] }: ProjectFor
         <button
           type="button"
           onClick={() => router.back()}
-          className="px-6 py-3 border border-[#2a2a2a] text-sm font-bold uppercase tracking-wider hover:bg-[#2a2a2a] transition-colors"
+          className="px-6 py-2.5 border border-[#2a2a2a] text-xs font-bold uppercase tracking-wider hover:bg-[#2a2a2a] transition-colors rounded-sm cursor-pointer"
         >
-          Cancel
+          {t.admin.common.cancel}
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="px-8 py-3 bg-[#f5f5f0] text-[#0a0a0a] text-sm font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-white transition-colors disabled:opacity-50"
+          className="px-8 py-2.5 bg-[#f5f5f0] text-[#0a0a0a] text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-white transition-colors disabled:opacity-50 rounded-sm cursor-pointer"
         >
           {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-          {initialData ? 'Update Project' : 'Create Project'}
+          {initialData ? t.admin.projectForm.saveBtn : t.admin.projectForm.createBtn}
         </button>
       </div>
     </form>

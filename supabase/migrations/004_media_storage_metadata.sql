@@ -1,0 +1,6 @@
+ALTER TABLE media ADD COLUMN IF NOT EXISTS storage_key TEXT;
+ALTER TABLE media ADD COLUMN IF NOT EXISTS mime_type TEXT;
+ALTER TABLE media ADD COLUMN IF NOT EXISTS file_size BIGINT;
+ALTER TABLE media ADD COLUMN IF NOT EXISTS duration REAL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_media_project_url_unique ON media(project_id, url);

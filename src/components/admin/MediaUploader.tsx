@@ -5,6 +5,7 @@ import { UploadCloud, FileVideo, X, RotateCw } from 'lucide-react';
 import { useToast } from '@/components/admin/Toast';
 import { cn } from '@/lib/utils';
 import { uploadMedia } from '@/lib/r2/client-upload';
+import { MAX_IMAGE_SIZE, MAX_VIDEO_SIZE, formatUploadLimit } from '@/lib/upload-config';
 
 interface MediaUploaderProps {
   projectId: string;
@@ -73,10 +74,10 @@ export default function MediaUploader({ projectId, onUploadComplete }: MediaUplo
 
     Array.from(files).forEach((file) => {
       const isVideo = file.type.startsWith('video/');
-      const maxSize = isVideo ? 100 * 1024 * 1024 : 20 * 1024 * 1024;
+      const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
 
       if (file.size > maxSize) {
-        toastError(`File ${file.name} is too large. Max ${isVideo ? '100MB' : '20MB'}`);
+        toastError(`File ${file.name} is too large. Max ${formatUploadLimit(maxSize)}`);
         return;
       }
 
@@ -164,7 +165,9 @@ export default function MediaUploader({ projectId, onUploadComplete }: MediaUplo
       >
         <UploadCloud className="w-12 h-12 text-neutral-500 mb-4" />
         <h3 className="text-lg font-bold tracking-wider mb-2">DRAG & DROP YOUR MEDIA HERE</h3>
-        <p className="text-neutral-500 text-sm mb-6">Supports JPG, PNG, WEBP, MP4, WEBM (Max 100MB Video / 20MB Image)</p>
+        <p className="text-neutral-500 text-sm mb-6">
+          Supports JPG, PNG, WEBP, GIF, AVIF, MP4, WEBM, MOV (Max {formatUploadLimit(MAX_VIDEO_SIZE)} Video / {formatUploadLimit(MAX_IMAGE_SIZE)} Image)
+        </p>
 
         <label className="cursor-pointer px-6 py-2 bg-[#2a2a2a] hover:bg-[#333] transition-colors text-sm font-bold uppercase tracking-widest inline-block">
           Choose Files

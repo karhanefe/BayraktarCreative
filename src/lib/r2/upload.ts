@@ -2,16 +2,26 @@ import 'server-only';
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { r2Client } from './client';
-
-export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
-export const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
-export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
-export const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
+import { ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE } from '../upload-config';
 
 export const BUCKET_NAME = process.env.R2_BUCKET_NAME || process.env.NEXT_PUBLIC_R2_BUCKET_NAME || '';
 export const PUBLIC_DOMAIN = process.env.R2_PUBLIC_BASE_URL || process.env.R2_PUBLIC_DOMAIN || process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN || process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL || '';
 
+export function isR2Configured() {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || process.env.R2_ACCOUNT_ID;
+  const accessKeyId = process.env.CLOUDFLARE_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.CLOUDFLARE_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY;
+  return Boolean(accountId && accessKeyId && secretAccessKey && BUCKET_NAME && PUBLIC_DOMAIN);
+}
+
+function assertR2Configured() {
+  if (!isR2Configured()) {
+    throw new Error('Media storage is not configured. Add the Cloudflare R2 environment variables in Vercel.');
+  }
+}
+
 export async function generatePresignedUploadUrl(storageKey: string, contentType: string) {
+  assertR2Configured();
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: storageKey,
@@ -23,6 +33,7 @@ export async function generatePresignedUploadUrl(storageKey: string, contentType
 }
 
 export async function deleteObject(storageKey: string) {
+  assertR2Configured();
   const command = new DeleteObjectCommand({
     Bucket: BUCKET_NAME,
     Key: storageKey,
@@ -32,6 +43,7 @@ export async function deleteObject(storageKey: string) {
 }
 
 export function getPublicUrl(storageKey: string): string {
+  assertR2Configured();
   // Ensure the public domain has a trailing slash or handles it correctly
   const baseUrl = PUBLIC_DOMAIN.endsWith('/') ? PUBLIC_DOMAIN : `${PUBLIC_DOMAIN}/`;
   return `${baseUrl}${storageKey}`;

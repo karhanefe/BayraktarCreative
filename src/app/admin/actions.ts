@@ -20,7 +20,10 @@ import {
   updateMediaOrder,
   generateUniqueSlug,
   getProjectById,
+  getMediaItem,
+  importDemoContent,
 } from '@/lib/supabase/admin-queries';
+import { deleteObject } from '@/lib/r2/upload';
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -319,6 +322,15 @@ export async function deleteMediaAction(mediaId: string, projectId: string) {
   try {
     await requireAdmin();
 
+    const media = await getMediaItem(mediaId);
+    if (!media || media.project_id !== projectId) {
+      return { error: 'Media not found' };
+    }
+
+    if (media.storage_key) {
+      await deleteObject(media.storage_key);
+    }
+
     await deleteMediaItem(mediaId);
 
     revalidatePath(`/admin/projects/${projectId}`);
@@ -329,6 +341,25 @@ export async function deleteMediaAction(mediaId: string, projectId: string) {
   } catch (error: any) {
     console.error('deleteMediaAction error:', error);
     return { error: error.message || 'Failed to delete media' };
+  }
+}
+
+export async function importDemoContentAction() {
+  try {
+    await requireAdmin();
+    const result = await importDemoContent();
+
+    revalidatePath('/admin');
+    revalidatePath('/admin/projects');
+    revalidatePath('/admin/categories');
+    revalidatePath('/admin/settings');
+    revalidatePath('/');
+    revalidatePath('/work');
+
+    return { success: true, result };
+  } catch (error: any) {
+    console.error('importDemoContentAction error:', error);
+    return { error: error.message || 'Failed to import example content' };
   }
 }
 

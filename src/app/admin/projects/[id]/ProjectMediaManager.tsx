@@ -7,6 +7,7 @@ import { deleteMediaAction, setHeroMediaAction, updateMediaOrderAction } from '@
 import { useToast } from '@/components/admin/Toast';
 import { useRouter } from 'next/navigation';
 import type { Media } from '@/lib/supabase/types';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface ProjectMediaManagerProps {
   projectId: string;
@@ -14,6 +15,7 @@ interface ProjectMediaManagerProps {
 }
 
 export default function ProjectMediaManager({ projectId, initialMedia }: ProjectMediaManagerProps) {
+  const { t, locale } = useLanguage();
   const [mediaList, setMediaList] = useState<MediaItem[]>(
     initialMedia.map((m) => ({
       id: m.id,
@@ -43,7 +45,7 @@ export default function ProjectMediaManager({ projectId, initialMedia }: Project
       }));
       const res = await updateMediaOrderAction(projectId, payload);
       if (res?.error) throw new Error(res.error);
-      success('Media order updated');
+      success(t.admin.projects.orderUpdated);
       router.refresh();
     } catch (err: any) {
       error(err.message || 'Failed to update order');
@@ -61,7 +63,7 @@ export default function ProjectMediaManager({ projectId, initialMedia }: Project
     try {
       const res = await setHeroMediaAction(projectId, mediaId);
       if (res?.error) throw new Error(res.error);
-      success('Hero media updated');
+      success(locale === 'tr' ? 'Kapak medyası güncellendi' : 'Hero media updated');
       router.refresh();
     } catch (err: any) {
       error(err.message || 'Failed to set hero media');
@@ -73,7 +75,7 @@ export default function ProjectMediaManager({ projectId, initialMedia }: Project
     try {
       const res = await deleteMediaAction(mediaId, projectId);
       if (res?.error) throw new Error(res.error);
-      success('Media deleted');
+      success(locale === 'tr' ? 'Medya silindi' : 'Media deleted');
       router.refresh();
     } catch (err: any) {
       error(err.message || 'Failed to delete media');
@@ -85,16 +87,18 @@ export default function ProjectMediaManager({ projectId, initialMedia }: Project
       <MediaUploader projectId={projectId} onUploadComplete={handleUploadComplete} />
 
       <div className="pt-6 border-t border-[#2a2a2a]">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm uppercase tracking-widest text-neutral-400 font-medium">
-            Project Media Gallery ({mediaList.length})
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3 className="text-xs uppercase tracking-widest text-neutral-400 font-medium">
+            {t.admin.projectForm.mediaTab} ({mediaList.length})
           </h3>
-          <span className="text-xs text-neutral-500">Drag to reorder • Star indicates hero media</span>
+          <span className="text-xs text-neutral-500 font-mono">
+            {locale === 'tr' ? 'Sıralamak için sürükleyin • Yıldız kapak medyasını belirtir' : 'Drag to reorder • Star indicates hero cover'}
+          </span>
         </div>
 
         {mediaList.length === 0 ? (
           <div className="p-8 text-center bg-[#1a1a1a] border border-[#2a2a2a] text-neutral-500 text-sm">
-            No media uploaded for this project yet. Upload images or videos above.
+            {locale === 'tr' ? 'Bu proje için henüz medya yüklenmedi. Yukarıdan görsel veya video ekleyin.' : 'No media uploaded for this project yet. Upload images or videos above.'}
           </div>
         ) : (
           <MediaGrid

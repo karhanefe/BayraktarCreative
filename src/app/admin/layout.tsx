@@ -7,6 +7,8 @@ export const metadata = {
   title: 'Admin - Bayraktar Creative',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   let isAuthenticated = false;
   try {

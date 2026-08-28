@@ -116,12 +116,13 @@ bayraktar-creative/
 │   │   ├── utils.ts                         # Tailwind merge & clsx utility
 │   │   ├── r2/                              # Cloudflare R2 S3 client & direct upload
 │   │   └── supabase/                        # Database queries, mutations & clients
-│   └── middleware.ts                        # Route protection & cookie refresh
+│   └── proxy.ts                             # Route protection & cookie refresh
 ├── supabase/
 │   └── migrations/
 │       ├── 001_initial_schema.sql           # Tables, indexes, updated_at triggers
 │       ├── 002_rls_policies.sql             # Admin security & public read policies
-│       └── 003_seed_data.sql                # Categories, demo projects, site settings
+│       ├── 003_seed_data.sql                # Default categories and site settings
+│       └── 004_media_storage_metadata.sql   # R2 object metadata for uploads
 ├── next.config.ts                           # Server packages & image optimization
 ├── tsconfig.json                            # Strict TypeScript compiler options
 └── package.json                             # Dependencies and scripts
@@ -167,7 +168,7 @@ npm install
 # 3. Copy environment variables
 cp .env.example .env.local
 
-# 4. Start local development server (runs with demo data out-of-the-box)
+# 4. Start local development server
 npm run dev
 
 # 5. Open browser at:
@@ -201,6 +202,9 @@ R2_PUBLIC_BASE_URL=https://media.bayraktarcreative.com
 # SITE & REVALIDATION SETTINGS
 # ==============================================================================
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# Optional local-only sample display. Keep false in production.
+DEMO_MODE=false
 ```
 
 ---
@@ -209,9 +213,13 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 1. In your **Supabase Dashboard**, open the **SQL Editor**.
 2. Run the migration scripts in sequential order:
-   - `supabase/migrations/001_initial_schema.sql` (Creates `profiles`, `categories`, `projects`, `project_media`, `site_settings` tables, constraints, indexes, and triggers)
+   - `supabase/migrations/001_initial_schema.sql` (Creates `profiles`, `categories`, `projects`, `media`, `site_settings` tables, constraints, indexes, and triggers)
    - `supabase/migrations/002_rls_policies.sql` (Implements Row Level Security and the `is_admin()` authorization function)
    - `supabase/migrations/003_seed_data.sql` (Seeds default categories and initial site settings)
+   - `supabase/migrations/004_media_storage_metadata.sql` (Adds R2 metadata used by upload and delete operations)
+
+Bundled example projects are not treated as live content. When the database is empty,
+an administrator can import them once from the admin dashboard and edit them normally.
 
 3. **To Grant Administrator Access**:
    After creating an account via Supabase Auth (or `/admin/login`), insert a record into the `profiles` table:

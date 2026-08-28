@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { gsap, useGSAP } from '@/lib/gsap-config'
 import { Z_INDEX } from '@/lib/design-tokens'
 import { cn } from '@/lib/utils'
@@ -8,6 +9,7 @@ import { cn } from '@/lib/utils'
 type CursorState = 'default' | 'hover' | 'view' | 'drag' | 'close' | 'hidden'
 
 export function CustomCursor() {
+  const pathname = usePathname()
   const cursorRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLDivElement>(null)
   const [isPointerFine, setIsPointerFine] = useState(false)
@@ -120,7 +122,7 @@ export function CustomCursor() {
     }
   }, [cursorState])
 
-  if (!isPointerFine) return null
+  if (!isPointerFine || pathname?.startsWith('/admin')) return null
 
   return (
     <div

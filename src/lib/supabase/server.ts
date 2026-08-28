@@ -10,31 +10,26 @@ export async function createClient() {
     return null;
   }
 
-  try {
-    const cookieStore = await cookies();
+  const cookieStore = await cookies();
 
-    return createServerClient<Database>(
-      supabaseUrl,
-      supabaseAnonKey,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => {
-                cookieStore.set(name, value, options);
-              });
-            } catch {
-              // Ignored when called from Server Components
-            }
-          },
+  return createServerClient<Database>(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
         },
-      }
-    );
-  } catch (err) {
-    console.warn('Failed to initialize Supabase server client, falling back to mock mode:', err);
-    return null;
-  }
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // Expected when called from a Server Component.
+          }
+        },
+      },
+    }
+  );
 }
