@@ -5,23 +5,19 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ScrollReveal } from '@/components/animation/ScrollReveal';
 import { useLanguage } from '@/context/LanguageContext';
+import type { Category } from '@/lib/supabase/types';
 
 export interface CategoryShowcaseProps {
-  categories?: any[];
+  categories?: Category[];
 }
 
 export function CategoryShowcase({ categories: passedCategories }: CategoryShowcaseProps) {
   const [hovered, setHovered] = useState<string | null>(null);
   const { t, locale } = useLanguage();
 
-  const fallback = [
-    { id: 'commercial', name: t.categories['commercial'], slug: 'commercial' },
-    { id: 'real-estate', name: t.categories['real-estate'], slug: 'real-estate' },
-    { id: 'automotive', name: t.categories['automotive'], slug: 'automotive' },
-    { id: 'drone', name: t.categories['drone'], slug: 'drone' },
-  ];
+  const list = passedCategories || [];
 
-  const list = passedCategories && passedCategories.length > 0 ? passedCategories : fallback;
+  if (list.length === 0) return null;
 
   return (
     <section className="py-24 md:py-36 px-6 md:px-12 bg-bc-black text-bc-white border-t border-bc-white/5">
@@ -38,8 +34,7 @@ export function CategoryShowcase({ categories: passedCategories }: CategoryShowc
               (t.categories as Record<string, string>)[cat.slug] ||
               (locale === 'tr' ? cat.name_tr : cat.name_en) ||
               cat.name_en ||
-              cat.name_tr ||
-              cat.name;
+              cat.name_tr;
             return (
               <ScrollReveal key={cat.id || idx} delay={idx * 0.08}>
                 <Link
